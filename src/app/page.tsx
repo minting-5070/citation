@@ -4,21 +4,13 @@ import { useChat } from 'ai/react';
 import ChatInput from './components/ChatInput';
 import ChatMessages from './components/ChatMessages';
 import { useRef, useEffect, useState } from 'react';
+import { useGTM } from './hooks/useGTM';
 
 // TypeScript 타입 정의
 declare global {
   interface Window {
     dataLayer: any[];
   }
-}
-
-// SHA-256 해시 함수
-async function sha256Hex(message: string): Promise<string> {
-  const msgBuffer = new TextEncoder().encode(message);
-  const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-  return hashHex;
 }
 
 export default function Home() {
@@ -34,6 +26,17 @@ export default function Home() {
   const [displayMessages, setDisplayMessages] = useState(messages);
   const [isThinking, setIsThinking] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  
+  // GTM 훅 사용
+  const { 
+    trackPageView, 
+    trackAIQuery, 
+    trackAIResponse, 
+    trackCitationClick,
+    trackGoogleScholarRedirect,
+    trackTimeOnPage,
+    trackSessionStats
+  } = useGTM();
 
   // GTM DataLayer 초기화 및 디버깅
   useEffect(() => {
@@ -49,11 +52,7 @@ export default function Home() {
         script.onload = () => {
           console.log('[DEBUG] GTM script loaded successfully');
           // GTM 로드 후 페이지 뷰 이벤트 푸시
-          window.dataLayer.push({
-            event: 'page_view',
-            page_title: 'Jung\'s Research Assistant',
-            page_location: window.location.href
-          });
+          trackPageView('Jung\'s Research Assistant', window.location.href);
           console.log('[DEBUG] page_view event pushed after GTM load');
         };
         script.onerror = () => {
@@ -66,16 +65,20 @@ export default function Home() {
         console.log('[DEBUG] dataLayer already exists, current length:', window.dataLayer.length);
         
         // 페이지 로드 이벤트
-        window.dataLayer.push({
-          event: 'page_view',
-          page_title: 'Jung\'s Research Assistant',
-          page_location: window.location.href
-        });
-        
+        trackPageView('Jung\'s Research Assistant', window.location.href);
         console.log('[DEBUG] page_view event pushed');
       }
     }
-  }, []);
+  }, [trackPageView]);
+
+  // 주기적으로 페이지 체류 시간 추적 (5분마다)
+  useEffect(() => {
+    const interval = setInterval(() => {
+      trackTimeOnPage();
+    }, 5 * 60 * 1000); // 5분
+
+    return () => clearInterval(interval);
+  }, [trackTimeOnPage]);
 
   // 새 메시지가 추가될 때 자동으로 스크롤
   const scrollToBottom = () => {
@@ -86,7 +89,7 @@ export default function Home() {
     scrollToBottom();
   }, [displayMessages]);
 
-  // 메시지 상태 관리
+  // 메시지 상태 관리 및 AI 응답 추적
   useEffect(() => {
     const lastMessage = messages[messages.length - 1];
     
@@ -98,6 +101,18 @@ export default function Home() {
     } else if (!isLoading && lastMessage?.role === 'assistant') {
       // AI 응답이 완료되었을 때
       setIsThinking(false);
+      
+      // AI 응답 추적
+      if (lastMessage.content) {
+        const userMessage = messages[messages.length - 2]; // AI 응답 직전 사용자 메시지
+        if (userMessage?.role === 'user') {
+          // 사용자 메시지의 해시 생성
+          sha256Hex(userMessage.content).then(promptHash => {
+            trackAIResponse(lastMessage.content, promptHash.slice(0, 16));
+          });
+        }
+      }
+      
       // 완성된 응답을 포함한 모든 메시지 표시
       setTimeout(() => {
         setDisplayMessages(messages);
@@ -107,7 +122,7 @@ export default function Home() {
       setDisplayMessages(messages);
       setIsThinking(false);
     }
-  }, [messages, isLoading]);
+  }, [messages, isLoading, trackAIResponse]);
 
   // AI 쿼리 이벤트 추적을 위한 커스텀 handleSubmit
   const handleSubmitWithTracking = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -117,22 +132,7 @@ export default function Home() {
 
     try {
       // GTM 이벤트 추적
-      if (typeof window !== 'undefined' && window.dataLayer) {
-        const promptHash = (await sha256Hex(input)).slice(0, 16);
-        
-        window.dataLayer.push({
-          event: 'ai_query',
-          prompt_hash: promptHash,
-          prompt_len: input.length,
-          prompt_text: input.substring(0, 100) // 처음 100자만 (디버깅용)
-        });
-        
-        console.log('[DEBUG] GTM event pushed:', {
-          event: 'ai_query',
-          prompt_hash: promptHash,
-          prompt_len: input.length
-        });
-      }
+      await trackAIQuery(input);
     } catch (error) {
       console.error('[DEBUG] GTM tracking error:', error);
     }
@@ -145,7 +145,19 @@ export default function Home() {
     setMessages([]);
     setDisplayMessages([]);
     setIsThinking(false);
+    
+    // 채팅 초기화 이벤트 추적
+    trackSessionStats();
   };
+
+  // SHA-256 해시 함수
+  async function sha256Hex(message: string): Promise<string> {
+    const msgBuffer = new TextEncoder().encode(message);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    return hashHex;
+  }
   
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col">
@@ -166,12 +178,27 @@ export default function Home() {
             </div>
             <div className="flex items-center space-x-2">
               {displayMessages.length > 0 && (
-                <button
-                  onClick={clearChat}
-                  className="px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  대화 초기화
-                </button>
+                <>
+                  <button
+                    onClick={() => {
+                      const lastUserMessage = messages.filter(m => m.role === 'user').pop();
+                      if (lastUserMessage) {
+                        trackGoogleScholarRedirect(lastUserMessage.content);
+                        const encodedQuery = encodeURIComponent(lastUserMessage.content);
+                        window.open(`https://scholar.google.com/scholar?q=${encodedQuery}`, '_blank');
+                      }
+                    }}
+                    className="px-3 py-1.5 text-sm bg-green-600 hover:bg-green-700 text-white rounded transition-colors"
+                  >
+                    Google Scholar 검색
+                  </button>
+                  <button
+                    onClick={clearChat}
+                    className="px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    대화 초기화
+                  </button>
+                </>
               )}
             </div>
           </div>
@@ -198,7 +225,11 @@ export default function Home() {
               </div>
             ) : (
               <>
-                <ChatMessages messages={displayMessages} />
+                <ChatMessages 
+                  messages={displayMessages} 
+                  onCitationClick={trackCitationClick}
+                  onGoogleScholarRedirect={trackGoogleScholarRedirect}
+                />
                 {isThinking && (
                   <div className="flex justify-start mb-4">
                     <div className="flex max-w-[80%] flex-row items-end gap-2">

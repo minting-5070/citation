@@ -6,6 +6,8 @@ import rehypeRaw from 'rehype-raw';
 
 type Props = {
   messages: Message[];
+  onCitationClick?: (citationNumber: string, citationUrl: string, promptHash?: string) => void;
+  onGoogleScholarRedirect?: (searchQuery: string, promptHash?: string) => void;
 };
 
 function buildCitationMap(referencesSection: string) {
@@ -49,7 +51,7 @@ function formatReferences(content: string) {
     const url = citationMap[n];
     if (!url) return '';
     const supNum = superscript(n);
-    return `<sup><a href=\"${url}\" target=\"_blank\" rel=\"noopener noreferrer\" class=\"text-blue-400 hover:text-blue-300\">🔗${supNum}</a></sup>`;
+    return `<sup><a href=\"${url}\" target=\"_blank\" rel=\"noopener noreferrer\" class=\"text-blue-400 hover:text-blue-300 citation-link\" data-citation-number=\"${n}\" data-citation-url=\"${url}\">🔗${supNum}</a></sup>`;
   });
 
   // Ensure paragraphs are separated by a blank line for readability
@@ -60,7 +62,28 @@ function formatReferences(content: string) {
   return { mainContent, references };
 }
 
-export default function ChatMessages({ messages }: Props) {
+export default function ChatMessages({ messages, onCitationClick, onGoogleScholarRedirect }: Props) {
+  // 출처 클릭 핸들러
+  const handleCitationClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    const citationNumber = e.currentTarget.getAttribute('data-citation-number');
+    const citationUrl = e.currentTarget.getAttribute('data-citation-url');
+    
+    if (citationNumber && citationUrl && onCitationClick) {
+      onCitationClick(citationNumber, citationUrl);
+    }
+  };
+
+  // Google Scholar 이동 핸들러
+  const handleGoogleScholarRedirect = (searchQuery: string) => {
+    if (onGoogleScholarRedirect) {
+      onGoogleScholarRedirect(searchQuery);
+    }
+    
+    // Google Scholar로 새 창에서 열기
+    const encodedQuery = encodeURIComponent(searchQuery);
+    window.open(`https://scholar.google.com/scholar?q=${encodedQuery}`, '_blank');
+  };
+
   return (
     <div className="space-y-4">
       {messages.map((msg, index) => {
@@ -120,14 +143,49 @@ export default function ChatMessages({ messages }: Props) {
                       strong: ({ node, ...props }) => (
                         <strong {...props} className="font-semibold text-foreground" />
                       ),
-                      a: ({ node, ...props }) => (
-                        <a
-                          {...props}
-                          className="text-blue-400 hover:text-blue-300 underline"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                        />
-                      ),
+                      a: ({ node, ...props }) => {
+                        const href = props.href || '';
+                        const isCitation = props.className?.includes('citation-link');
+                        
+                        if (isCitation) {
+                          return (
+                            <a
+                              {...props}
+                              className="text-blue-400 hover:text-blue-300 underline cursor-pointer"
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              onClick={handleCitationClick}
+                            />
+                          );
+                        }
+                        
+                        // Google Scholar 링크 감지 및 처리
+                        if (href.includes('scholar.google.com') || href.includes('google.com/scholar')) {
+                          return (
+                            <a
+                              {...props}
+                              className="text-green-400 hover:text-green-300 underline cursor-pointer"
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              onClick={() => {
+                                const searchQuery = href.includes('q=') 
+                                  ? decodeURIComponent(href.split('q=')[1]?.split('&')[0] || '')
+                                  : props.children?.toString() || '';
+                                handleGoogleScholarRedirect(searchQuery);
+                              }}
+                            />
+                          );
+                        }
+                        
+                        return (
+                          <a
+                            {...props}
+                            className="text-blue-400 hover:text-blue-300 underline"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          />
+                        );
+                      },
                       code: ({ node, ...props }) => (
                         <code {...props} className="bg-gray-800 rounded px-1 py-0.5 text-sm" />
                       ),
