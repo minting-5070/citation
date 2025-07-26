@@ -46,21 +46,34 @@ export default function Home() {
         const script = document.createElement('script');
         script.async = true;
         script.src = 'https://www.googletagmanager.com/gtm.js?id=GTM-THPN28M8';
+        script.onload = () => {
+          console.log('[DEBUG] GTM script loaded successfully');
+          // GTM 로드 후 페이지 뷰 이벤트 푸시
+          window.dataLayer.push({
+            event: 'page_view',
+            page_title: 'Jung\'s Research Assistant',
+            page_location: window.location.href
+          });
+          console.log('[DEBUG] page_view event pushed after GTM load');
+        };
+        script.onerror = () => {
+          console.error('[DEBUG] GTM script failed to load');
+        };
         document.head.appendChild(script);
         
-        console.log('[DEBUG] GTM script loaded');
+        console.log('[DEBUG] GTM script loading started');
+      } else {
+        console.log('[DEBUG] dataLayer already exists, current length:', window.dataLayer.length);
+        
+        // 페이지 로드 이벤트
+        window.dataLayer.push({
+          event: 'page_view',
+          page_title: 'Jung\'s Research Assistant',
+          page_location: window.location.href
+        });
+        
+        console.log('[DEBUG] page_view event pushed');
       }
-      
-      console.log('[DEBUG] dataLayer ready, current length:', window.dataLayer.length);
-      
-      // 페이지 로드 이벤트
-      window.dataLayer.push({
-        event: 'page_view',
-        page_title: 'Jung\'s Research Assistant',
-        page_location: window.location.href
-      });
-      
-      console.log('[DEBUG] page_view event pushed');
     }
   }, []);
 
