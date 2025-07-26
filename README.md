@@ -1,6 +1,23 @@
 # Jung's Research Assistant
 
-Azure OpenAI API를 사용하는 논문 검색 AI 어시스턴트입니다.
+## 🎯 프로젝트 개요
+논문 검색, 요약, 인용, 참고문헌 정리 등 리서치에 특화된 AI 어시스턴트입니다.
+
+## 🚀 주요 기능
+- **논문 검색**: 다양한 학술 데이터베이스에서 논문 검색
+- **AI 요약**: 논문 내용을 AI가 자동으로 요약
+- **인용 관리**: 참고문헌 자동 생성 및 관리
+- **리서치 지원**: 연구 과정 전반을 지원하는 AI 도구
+
+## 📊 분석 도구
+- **Google Tag Manager (GTM)**: 이벤트 추적 및 태그 관리
+- **Google Analytics**: 사용자 행동 분석 및 웹사이트 성과 측정
+
+## 🛠 기술 스택
+- **Frontend**: Next.js 15, React 19, TypeScript
+- **Styling**: Tailwind CSS
+- **AI**: Azure OpenAI API
+- **Analytics**: Google Tag Manager, Google Analytics
 
 ## Getting Started
 

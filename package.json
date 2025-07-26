@@ -1,6 +1,6 @@
 {
-  "name": "my-chatgpt-clone",
-  "version": "0.1.0",
+  "name": "jung-research-assistant",
+  "version": "1.0.0",
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",

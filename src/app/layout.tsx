@@ -43,21 +43,6 @@ export default function RootLayout({
       >
         <GoogleTagManager />
         
-        {/* Google Analytics */}
-        <Script
-          src="https://www.googletagmanager.com/gtag/js?id=G-ZDGZ5YPFFS"
-          strategy="afterInteractive"
-        />
-        <Script id="google-analytics" strategy="afterInteractive">
-          {`
-            window.dataLayer = window.dataLayer || [];
-            function gtag(){dataLayer.push(arguments);}
-            gtag('js', new Date());
-            gtag('config', 'G-ZDGZ5YPFFS');
-            console.log('Google Analytics 초기화됨');
-          `}
-        </Script>
-        
         {children}
       </body>
     </html>

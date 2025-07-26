@@ -3,6 +3,7 @@
 import Script from 'next/script';
 
 const GTM_ID = 'GTM-THPN28M8';
+const GA_ID = 'G-ZDGZ5YPFFS';
 
 export default function GoogleTagManager() {
   return (
@@ -31,6 +32,24 @@ export default function GoogleTagManager() {
           `,
         }}
       />
+      
+      {/* Google Analytics via GTM */}
+      <Script
+        src={`https://www.googletagmanager.com/gtag/js?id=${GA_ID}`}
+        strategy="afterInteractive"
+      />
+      <Script id="google-analytics" strategy="afterInteractive">
+        {`
+          window.dataLayer = window.dataLayer || [];
+          function gtag(){dataLayer.push(arguments);}
+          gtag('js', new Date());
+          gtag('config', '${GA_ID}', {
+            page_title: document.title,
+            page_location: window.location.href
+          });
+          console.log('Google Analytics via GTM 초기화됨');
+        `}
+      </Script>
     </>
   );
 } 
