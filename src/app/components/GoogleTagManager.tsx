@@ -3,7 +3,6 @@
 import Script from 'next/script';
 
 const GTM_ID = 'GTM-THPN28M8';
-const GA_ID = 'G-ZDGZ5YPFFS';
 
 export default function GoogleTagManager() {
   return (
@@ -21,7 +20,7 @@ export default function GoogleTagManager() {
       {/* Google Tag Manager */}
       <Script
         id="gtm"
-        strategy="afterInteractive"
+        strategy="beforeInteractive"
         dangerouslySetInnerHTML={{
           __html: `
             (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
@@ -29,27 +28,10 @@ export default function GoogleTagManager() {
             j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
             'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
             })(window,document,'script','dataLayer','${GTM_ID}');
+            console.log('GTM 스크립트 로드됨 - ID: ${GTM_ID}');
           `,
         }}
       />
-      
-      {/* Google Analytics via GTM */}
-      <Script
-        src={`https://www.googletagmanager.com/gtag/js?id=${GA_ID}`}
-        strategy="afterInteractive"
-      />
-      <Script id="google-analytics" strategy="afterInteractive">
-        {`
-          window.dataLayer = window.dataLayer || [];
-          function gtag(){dataLayer.push(arguments);}
-          gtag('js', new Date());
-          gtag('config', '${GA_ID}', {
-            page_title: document.title,
-            page_location: window.location.href
-          });
-          console.log('Google Analytics via GTM 초기화됨');
-        `}
-      </Script>
     </>
   );
 } 

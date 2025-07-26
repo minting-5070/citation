@@ -27,7 +27,7 @@ async function testGTM() {
     });
     
     console.log('🌐 페이지 로딩 중...');
-    await page.goto('https://citation-psi.vercel.app/', { 
+    await page.goto('https://citation-1rp92s4yu-ljmezy-4751s-projects.vercel.app/', { 
       waitUntil: 'networkidle2',
       timeout: 30000 
     });
