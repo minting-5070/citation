@@ -17,6 +17,7 @@ export default function GoogleTagManager() {
             j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
             'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
             })(window,document,'script','dataLayer','GTM-THPN28M8');
+            console.log('GTM 스크립트 로드됨');
           `,
         }}
       />
@@ -25,6 +26,9 @@ export default function GoogleTagManager() {
       <Script
         src="https://www.googletagmanager.com/gtag/js?id=G-ZDGZ5YPFFS"
         strategy="afterInteractive"
+        onLoad={() => {
+          console.log('Google Analytics 스크립트 로드됨');
+        }}
       />
       <Script id="google-analytics" strategy="afterInteractive">
         {`
@@ -32,6 +36,7 @@ export default function GoogleTagManager() {
           function gtag(){dataLayer.push(arguments);}
           gtag('js', new Date());
           gtag('config', 'G-ZDGZ5YPFFS');
+          console.log('Google Analytics 초기화됨');
         `}
       </Script>
     </>
