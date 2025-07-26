@@ -33,7 +33,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ko">
-      <head />
+      <head>
+        <meta charSet="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
@@ -50,7 +53,7 @@ export default function RootLayout({
         
         {/* Google Tag Manager */}
         <Script
-          id="google-tag-manager"
+          id="gtm-script"
           strategy="afterInteractive"
           dangerouslySetInnerHTML={{
             __html: `

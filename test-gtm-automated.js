@@ -1,131 +1,80 @@
+// GTM 자동 테스트 스크립트
 const puppeteer = require('puppeteer');
 
 async function testGTM() {
-  console.log('🚀 GTM 자동화 테스트 시작...');
+  console.log('🚀 GTM 테스트 시작...');
   
   const browser = await puppeteer.launch({ 
-    headless: false, 
-    defaultViewport: null,
-    args: ['--no-sandbox', '--disable-setuid-sandbox']
+    headless: false,
+    defaultViewport: { width: 1280, height: 720 }
   });
   
   try {
     const page = await browser.newPage();
     
-    // 콘솔 로그 수집
-    const logs = [];
-    page.on('console', msg => {
-      logs.push(`[${msg.type()}] ${msg.text()}`);
-      console.log(`[${msg.type()}] ${msg.text()}`);
-    });
-    
-    // 네트워크 요청 모니터링
-    const networkRequests = [];
+    // Network 요청 모니터링
+    const gtmRequests = [];
     page.on('request', request => {
-      if (request.url().includes('googletagmanager.com') || request.url().includes('google-analytics.com')) {
-        networkRequests.push({
-          url: request.url(),
-          method: request.method(),
-          timestamp: new Date().toISOString()
-        });
-        console.log(`🌐 GTM/GA 요청: ${request.method()} ${request.url()}`);
+      if (request.url().includes('googletagmanager.com')) {
+        gtmRequests.push(request.url());
+        console.log(`✅ GTM 요청 감지: ${request.url()}`);
       }
     });
     
-    console.log('📱 페이지 로딩 중...');
-    await page.goto('http://localhost:3000', { waitUntil: 'networkidle0' });
+    // Console 로그 모니터링
+    page.on('console', msg => {
+      if (msg.text().includes('dataLayer') || msg.text().includes('GTM')) {
+        console.log(`📝 Console: ${msg.text()}`);
+      }
+    });
+    
+    console.log('🌐 페이지 로딩 중...');
+    await page.goto('https://citation-psi.vercel.app/', { 
+      waitUntil: 'networkidle2',
+      timeout: 30000 
+    });
+    
+    console.log('⏳ 5초 대기 중...');
+    await new Promise(resolve => setTimeout(resolve, 5000));
     
     // DataLayer 확인
-    console.log('🔍 DataLayer 상태 확인...');
-    const dataLayerStatus = await page.evaluate(() => {
-      if (typeof window !== 'undefined' && window.dataLayer) {
-        return {
-          exists: true,
-          length: window.dataLayer.length,
-          content: window.dataLayer.slice(-5) // 마지막 5개 항목
-        };
-      }
-      return { exists: false };
+    const dataLayer = await page.evaluate(() => {
+      return window.dataLayer || [];
     });
     
-    console.log('📊 DataLayer 상태:', dataLayerStatus);
-    
-    // 페이지 뷰 이벤트 확인
-    console.log('👀 페이지 뷰 이벤트 확인...');
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    const pageViewEvents = await page.evaluate(() => {
-      if (window.dataLayer) {
-        return window.dataLayer.filter(item => item.event === 'page_view');
-      }
-      return [];
+    console.log(`📊 DataLayer 길이: ${dataLayer.length}`);
+    console.log('📋 DataLayer 내용:');
+    dataLayer.forEach((item, index) => {
+      console.log(`  ${index + 1}. ${JSON.stringify(item)}`);
     });
     
-    console.log('📄 페이지 뷰 이벤트:', pageViewEvents);
-    
-    // AI 쿼리 테스트
-    console.log('🤖 AI 쿼리 이벤트 테스트...');
-    
-    // 텍스트 입력
-    await page.type('textarea', '논문 검색 방법을 알려주세요');
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    // 전송 버튼 클릭
-    await page.click('button[type="submit"]');
-    await new Promise(resolve => setTimeout(resolve, 3000));
-    
-    // AI 쿼리 이벤트 확인
-    const aiQueryEvents = await page.evaluate(() => {
-      if (window.dataLayer) {
-        return window.dataLayer.filter(item => item.event === 'ai_query');
-      }
-      return [];
+    // GTM 스크립트 로드 확인
+    const gtmScript = await page.evaluate(() => {
+      const scripts = Array.from(document.querySelectorAll('script'));
+      return scripts.some(script => 
+        script.src && script.src.includes('googletagmanager.com')
+      );
     });
     
-    console.log('🤖 AI 쿼리 이벤트:', aiQueryEvents);
+    console.log(`🔍 GTM 스크립트 로드됨: ${gtmScript}`);
     
-    // GTM 디버그 모드로 테스트
-    console.log('🔧 GTM 디버그 모드 테스트...');
-    await page.goto('http://localhost:3000?gtm_debug=x', { waitUntil: 'networkidle0' });
-    await new Promise(resolve => setTimeout(resolve, 3000));
+    // 결과 요약
+    console.log('\n📈 테스트 결과:');
+    console.log(`- GTM 요청 수: ${gtmRequests.length}`);
+    console.log(`- DataLayer 이벤트 수: ${dataLayer.length}`);
+    console.log(`- GTM 스크립트 로드: ${gtmScript ? '✅ 성공' : '❌ 실패'}`);
     
-    // 다시 AI 쿼리 테스트
-    await page.type('textarea', '인용 형식에 대해 알려주세요');
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    await page.click('button[type="submit"]');
-    await new Promise(resolve => setTimeout(resolve, 3000));
-    
-    // 최종 결과 요약
-    console.log('\n📋 테스트 결과 요약:');
-    console.log('='.repeat(50));
-    console.log(`✅ DataLayer 존재: ${dataLayerStatus.exists}`);
-    console.log(`📊 DataLayer 길이: ${dataLayerStatus.length}`);
-    console.log(`📄 페이지 뷰 이벤트: ${pageViewEvents.length}개`);
-    console.log(`🤖 AI 쿼리 이벤트: ${aiQueryEvents.length}개`);
-    console.log(`🌐 GTM/GA 네트워크 요청: ${networkRequests.length}개`);
-    
-    if (aiQueryEvents.length > 0) {
-      console.log('\n🎉 AI 쿼리 이벤트 상세:');
-      aiQueryEvents.forEach((event, index) => {
-        console.log(`  ${index + 1}. prompt_hash: ${event.prompt_hash}`);
-        console.log(`     prompt_len: ${event.prompt_len}`);
-        console.log(`     prompt_text: ${event.prompt_text}`);
-      });
+    if (gtmRequests.length > 0 && dataLayer.length > 0) {
+      console.log('🎉 GTM이 정상적으로 작동하고 있습니다!');
+    } else {
+      console.log('⚠️ GTM에 문제가 있을 수 있습니다.');
     }
-    
-    if (networkRequests.length > 0) {
-      console.log('\n🌐 GTM/GA 네트워크 요청:');
-      networkRequests.forEach((req, index) => {
-        console.log(`  ${index + 1}. ${req.method} ${req.url}`);
-      });
-    }
-    
-    console.log('\n✅ GTM 테스트 완료!');
     
   } catch (error) {
-    console.error('❌ 테스트 중 오류 발생:', error);
+    console.error('❌ 테스트 중 오류 발생:', error.message);
   } finally {
     await browser.close();
+    console.log('🔚 브라우저 종료');
   }
 }
 

@@ -38,7 +38,19 @@ export default function Home() {
   // GTM DataLayer 초기화 및 디버깅
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      window.dataLayer = window.dataLayer || [];
+      // GTM 스크립트 동적 로드
+      if (!window.dataLayer) {
+        window.dataLayer = [];
+        
+        // GTM 스크립트 로드
+        const script = document.createElement('script');
+        script.async = true;
+        script.src = 'https://www.googletagmanager.com/gtm.js?id=GTM-THPN28M8';
+        document.head.appendChild(script);
+        
+        console.log('[DEBUG] GTM script loaded');
+      }
+      
       console.log('[DEBUG] dataLayer ready, current length:', window.dataLayer.length);
       
       // 페이지 로드 이벤트
@@ -47,6 +59,8 @@ export default function Home() {
         page_title: 'Jung\'s Research Assistant',
         page_location: window.location.href
       });
+      
+      console.log('[DEBUG] page_view event pushed');
     }
   }, []);
 

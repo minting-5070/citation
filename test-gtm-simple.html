@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GTM Simple Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; }
+        .test-section { margin: 20px 0; padding: 20px; border: 1px solid #ccc; }
+        button { padding: 10px 20px; margin: 5px; }
+        #log { background: #f5f5f5; padding: 10px; height: 300px; overflow-y: auto; }
+        .success { color: green; }
+        .error { color: red; }
+        .info { color: blue; }
+    </style>
+</head>
+<body>
+    <h1>GTM 간단 테스트</h1>
+    
+    <div class="test-section">
+        <h3>GTM 상태 확인</h3>
+        <button onclick="checkGTM()">GTM 상태 확인</button>
+        <button onclick="testDataLayer()">DataLayer 테스트</button>
+        <button onclick="clearLog()">로그 지우기</button>
+    </div>
+    
+    <div class="test-section">
+        <h3>로그</h3>
+        <div id="log"></div>
+    </div>
+
+    <script>
+        // 로그 함수
+        function log(message, type = 'info') {
+            const logDiv = document.getElementById('log');
+            const timestamp = new Date().toLocaleTimeString();
+            const className = type === 'success' ? 'success' : type === 'error' ? 'error' : 'info';
+            logDiv.innerHTML += `<div class="${className}">[${timestamp}] ${message}</div>`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+            console.log(message);
+        }
+
+        // 로그 지우기
+        function clearLog() {
+            document.getElementById('log').innerHTML = '';
+        }
+
+        // GTM 상태 확인
+        function checkGTM() {
+            log('=== GTM 상태 확인 시작 ===', 'info');
+            
+            // 1. DataLayer 존재 확인
+            if (typeof window.dataLayer !== 'undefined') {
+                log(`✅ DataLayer 존재함. 길이: ${window.dataLayer.length}`, 'success');
+            } else {
+                log('❌ DataLayer가 존재하지 않음', 'error');
+            }
+            
+            // 2. GTM 스크립트 로드 확인
+            const gtmScripts = document.querySelectorAll('script[src*="googletagmanager.com"]');
+            if (gtmScripts.length > 0) {
+                log(`✅ GTM 스크립트 ${gtmScripts.length}개 로드됨`, 'success');
+                gtmScripts.forEach((script, index) => {
+                    log(`  - 스크립트 ${index + 1}: ${script.src}`, 'info');
+                });
+            } else {
+                log('❌ GTM 스크립트가 로드되지 않음', 'error');
+            }
+            
+            // 3. GTM 함수 존재 확인
+            if (typeof window.gtag !== 'undefined') {
+                log('✅ gtag 함수 존재함', 'success');
+            } else {
+                log('⚠️ gtag 함수가 존재하지 않음 (정상일 수 있음)', 'info');
+            }
+            
+            // 4. 현재 페이지 URL 확인
+            log(`📄 현재 페이지: ${window.location.href}`, 'info');
+            
+            log('=== GTM 상태 확인 완료 ===', 'info');
+        }
+
+        // DataLayer 테스트
+        function testDataLayer() {
+            log('=== DataLayer 테스트 시작 ===', 'info');
+            
+            try {
+                // DataLayer 초기화
+                window.dataLayer = window.dataLayer || [];
+                log(`📊 DataLayer 초기화됨. 현재 길이: ${window.dataLayer.length}`, 'success');
+                
+                // 테스트 이벤트 푸시
+                const testEvent = {
+                    event: 'test_event',
+                    test_property: 'test_value',
+                    timestamp: new Date().toISOString()
+                };
+                
+                window.dataLayer.push(testEvent);
+                log(`✅ 테스트 이벤트 푸시됨: ${JSON.stringify(testEvent)}`, 'success');
+                
+                // 페이지 뷰 이벤트 푸시
+                window.dataLayer.push({
+                    event: 'page_view',
+                    page_title: 'GTM Simple Test',
+                    page_location: window.location.href
+                });
+                log('✅ 페이지 뷰 이벤트 푸시됨', 'success');
+                
+                log(`📊 최종 DataLayer 길이: ${window.dataLayer.length}`, 'info');
+                
+            } catch (error) {
+                log(`❌ DataLayer 테스트 중 오류: ${error.message}`, 'error');
+            }
+            
+            log('=== DataLayer 테스트 완료 ===', 'info');
+        }
+
+        // 페이지 로드 시 자동 테스트
+        window.onload = function() {
+            log('🚀 페이지 로드됨', 'info');
+            
+            // GTM 스크립트 동적 로드 (만약 없으면)
+            if (!document.querySelector('script[src*="googletagmanager.com"]')) {
+                log('🔧 GTM 스크립트 동적 로드 시도...', 'info');
+                
+                const script = document.createElement('script');
+                script.async = true;
+                script.src = 'https://www.googletagmanager.com/gtm.js?id=GTM-THPN28M8';
+                script.onload = function() {
+                    log('✅ GTM 스크립트 동적 로드 성공', 'success');
+                };
+                script.onerror = function() {
+                    log('❌ GTM 스크립트 동적 로드 실패', 'error');
+                };
+                document.head.appendChild(script);
+            }
+            
+            // 3초 후 자동 테스트
+            setTimeout(() => {
+                checkGTM();
+            }, 3000);
+        };
+    </script>
+</body>
+</html> 
