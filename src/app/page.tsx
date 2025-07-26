@@ -5,6 +5,22 @@ import ChatInput from './components/ChatInput';
 import ChatMessages from './components/ChatMessages';
 import { useRef, useEffect, useState } from 'react';
 
+// TypeScript 타입 정의
+declare global {
+  interface Window {
+    dataLayer: any[];
+  }
+}
+
+// SHA-256 해시 함수
+async function sha256Hex(message: string): Promise<string> {
+  const msgBuffer = new TextEncoder().encode(message);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  return hashHex;
+}
+
 export default function Home() {
   const {
     messages,
@@ -18,6 +34,21 @@ export default function Home() {
   const [displayMessages, setDisplayMessages] = useState(messages);
   const [isThinking, setIsThinking] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // GTM DataLayer 초기화 및 디버깅
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      window.dataLayer = window.dataLayer || [];
+      console.log('[DEBUG] dataLayer ready, current length:', window.dataLayer.length);
+      
+      // 페이지 로드 이벤트
+      window.dataLayer.push({
+        event: 'page_view',
+        page_title: 'Jung\'s Research Assistant',
+        page_location: window.location.href
+      });
+    }
+  }, []);
 
   // 새 메시지가 추가될 때 자동으로 스크롤
   const scrollToBottom = () => {
@@ -50,6 +81,38 @@ export default function Home() {
       setIsThinking(false);
     }
   }, [messages, isLoading]);
+
+  // AI 쿼리 이벤트 추적을 위한 커스텀 handleSubmit
+  const handleSubmitWithTracking = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    
+    if (!input.trim() || isLoading) return;
+
+    try {
+      // GTM 이벤트 추적
+      if (typeof window !== 'undefined' && window.dataLayer) {
+        const promptHash = (await sha256Hex(input)).slice(0, 16);
+        
+        window.dataLayer.push({
+          event: 'ai_query',
+          prompt_hash: promptHash,
+          prompt_len: input.length,
+          prompt_text: input.substring(0, 100) // 처음 100자만 (디버깅용)
+        });
+        
+        console.log('[DEBUG] GTM event pushed:', {
+          event: 'ai_query',
+          prompt_hash: promptHash,
+          prompt_len: input.length
+        });
+      }
+    } catch (error) {
+      console.error('[DEBUG] GTM tracking error:', error);
+    }
+
+    // 원래 handleSubmit 호출
+    handleSubmit(e);
+  };
 
   const clearChat = () => {
     setMessages([]);
@@ -138,7 +201,7 @@ export default function Home() {
             <ChatInput
               input={input}
               handleInputChange={handleInputChange}
-              handleSubmit={handleSubmit}
+              handleSubmit={handleSubmitWithTracking}
               isLoading={isLoading}
             />
           </div>

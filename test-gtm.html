@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GTM Test</title>
+    
+    <!-- Google Tag Manager -->
+    <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+    new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+    j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+    'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+    })(window,document,'script','dataLayer','GTM-THPN28M8');</script>
+    <!-- End Google Tag Manager -->
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; }
+        .test-section { margin: 20px 0; padding: 20px; border: 1px solid #ccc; }
+        button { padding: 10px 20px; margin: 5px; }
+        #log { background: #f5f5f5; padding: 10px; height: 200px; overflow-y: auto; }
+    </style>
+</head>
+<body>
+    <!-- Google Tag Manager (noscript) -->
+    <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-THPN28M8"
+    height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+    <!-- End Google Tag Manager (noscript) -->
+    
+    <h1>GTM 테스트 페이지</h1>
+    
+    <div class="test-section">
+        <h3>DataLayer 테스트</h3>
+        <button onclick="testDataLayer()">DataLayer 초기화 테스트</button>
+        <button onclick="testAIQuery()">AI 쿼리 이벤트 테스트</button>
+        <button onclick="clearLog()">로그 지우기</button>
+    </div>
+    
+    <div class="test-section">
+        <h3>로그</h3>
+        <div id="log"></div>
+    </div>
+
+    <script>
+        // 로그 함수
+        function log(message) {
+            const logDiv = document.getElementById('log');
+            const timestamp = new Date().toLocaleTimeString();
+            logDiv.innerHTML += `[${timestamp}] ${message}<br>`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+            console.log(message);
+        }
+
+        // 로그 지우기
+        function clearLog() {
+            document.getElementById('log').innerHTML = '';
+        }
+
+        // DataLayer 초기화 테스트
+        function testDataLayer() {
+            try {
+                window.dataLayer = window.dataLayer || [];
+                log(`DataLayer 초기화됨. 현재 길이: ${window.dataLayer.length}`);
+                
+                // 페이지 뷰 이벤트 테스트
+                window.dataLayer.push({
+                    event: 'page_view',
+                    page_title: 'GTM Test Page',
+                    page_location: window.location.href
+                });
+                log('페이지 뷰 이벤트 푸시됨');
+                
+            } catch (error) {
+                log(`에러: ${error.message}`);
+            }
+        }
+
+        // AI 쿼리 이벤트 테스트
+        async function testAIQuery() {
+            try {
+                // SHA-256 해시 함수
+                async function sha256Hex(message) {
+                    const msgBuffer = new TextEncoder().encode(message);
+                    const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+                    const hashArray = Array.from(new Uint8Array(hashBuffer));
+                    const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+                    return hashHex;
+                }
+
+                const testPrompt = "논문 검색 방법을 알려주세요";
+                const promptHash = (await sha256Hex(testPrompt)).slice(0, 16);
+                
+                window.dataLayer.push({
+                    event: 'ai_query',
+                    prompt_hash: promptHash,
+                    prompt_len: testPrompt.length,
+                    prompt_text: testPrompt.substring(0, 100)
+                });
+                
+                log(`AI 쿼리 이벤트 푸시됨:`);
+                log(`- prompt_hash: ${promptHash}`);
+                log(`- prompt_len: ${testPrompt.length}`);
+                log(`- prompt_text: ${testPrompt.substring(0, 100)}`);
+                
+            } catch (error) {
+                log(`에러: ${error.message}`);
+            }
+        }
+
+        // 페이지 로드 시 자동 테스트
+        window.onload = function() {
+            log('페이지 로드됨');
+            testDataLayer();
+        };
+    </script>
+</body>
+</html> 
