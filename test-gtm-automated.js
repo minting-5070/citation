@@ -23,9 +23,7 @@ async function testGTM() {
     
     // Console 로그 모니터링
     page.on('console', msg => {
-      if (msg.text().includes('dataLayer') || msg.text().includes('GTM')) {
-        console.log(`📝 Console: ${msg.text()}`);
-      }
+      console.log(`📝 Console: ${msg.text()}`);
     });
     
     console.log('🌐 페이지 로딩 중...');
@@ -36,6 +34,24 @@ async function testGTM() {
     
     console.log('⏳ 5초 대기 중...');
     await new Promise(resolve => setTimeout(resolve, 5000));
+    
+    // 모든 스크립트 태그 확인
+    const allScripts = await page.evaluate(() => {
+      const scripts = Array.from(document.querySelectorAll('script'));
+      return scripts.map(script => ({
+        src: script.src,
+        id: script.id,
+        innerHTML: script.innerHTML ? script.innerHTML.substring(0, 100) + '...' : null
+      }));
+    });
+    
+    console.log('🔍 모든 스크립트 태그:');
+    allScripts.forEach((script, index) => {
+      console.log(`  ${index + 1}. ID: ${script.id}, SRC: ${script.src}`);
+      if (script.innerHTML) {
+        console.log(`     Content: ${script.innerHTML}`);
+      }
+    });
     
     // DataLayer 확인
     const dataLayer = await page.evaluate(() => {
@@ -57,6 +73,22 @@ async function testGTM() {
     });
     
     console.log(`🔍 GTM 스크립트 로드됨: ${gtmScript}`);
+    
+    // window 객체 확인
+    const windowCheck = await page.evaluate(() => {
+      return {
+        hasDataLayer: typeof window.dataLayer !== 'undefined',
+        dataLayerType: typeof window.dataLayer,
+        hasGtag: typeof window.gtag !== 'undefined',
+        hasGTM: typeof window.gtm !== 'undefined'
+      };
+    });
+    
+    console.log('🔍 Window 객체 상태:');
+    console.log(`  - dataLayer 존재: ${windowCheck.hasDataLayer}`);
+    console.log(`  - dataLayer 타입: ${windowCheck.dataLayerType}`);
+    console.log(`  - gtag 존재: ${windowCheck.hasGtag}`);
+    console.log(`  - gtm 존재: ${windowCheck.hasGTM}`);
     
     // 결과 요약
     console.log('\n📈 테스트 결과:');
