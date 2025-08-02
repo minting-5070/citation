@@ -5,6 +5,15 @@ export const runtime = 'edge';
 export async function POST(req: Request) {
   const { messages } = await req.json();
 
+  // API 키 디버깅
+  const apiKey = process.env.PERPLEXITY_API_KEY;
+  if (!apiKey) {
+    return new Response('PERPLEXITY_API_KEY environment variable is not set', {
+      status: 500,
+      headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+    });
+  }
+
   // Perplexity API는 system 메시지 이후로 user/assistant가 번갈아가며 등장해야 합니다.
   // useChat이 전달하는 messages 배열에는 사용자가 연속으로 입력한 경우 user 메시지가 연달아 있을 수 있으므로
   // 동일 role이 연속될 경우 내용을 합쳐 하나로 병합한 후 전송합니다.
