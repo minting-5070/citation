@@ -65,11 +65,17 @@ function formatReferences(content: string) {
 export default function ChatMessages({ messages, onCitationClick, onGoogleScholarRedirect }: Props) {
   // 출처 클릭 핸들러
   const handleCitationClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    console.log('handleCitationClick called', e.currentTarget);
     const citationNumber = e.currentTarget.getAttribute('data-citation-number');
     const citationUrl = e.currentTarget.getAttribute('data-citation-url');
     
+    console.log('Citation data:', { citationNumber, citationUrl });
+    
     if (citationNumber && citationUrl && onCitationClick) {
+      console.log('Calling onCitationClick');
       onCitationClick(citationNumber, citationUrl);
+    } else {
+      console.log('Missing data or callback:', { citationNumber, citationUrl, onCitationClick: !!onCitationClick });
     }
   };
 
@@ -154,7 +160,10 @@ export default function ChatMessages({ messages, onCitationClick, onGoogleSchola
                               className="text-blue-400 hover:text-blue-300 underline cursor-pointer"
                               target="_blank"
                               rel="noopener noreferrer"
-                              onClick={handleCitationClick}
+                              onClick={(e) => {
+                                console.log('Citation link clicked!', props);
+                                handleCitationClick(e);
+                              }}
                             />
                           );
                         }
