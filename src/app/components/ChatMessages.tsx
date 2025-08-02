@@ -3,6 +3,13 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 // @ts-ignore
 import rehypeRaw from 'rehype-raw';
+import React from 'react';
+
+declare global {
+  interface Window {
+    citationClick: (citationNumber: string, citationUrl: string) => void;
+  }
+}
 
 type Props = {
   messages: Message[];
@@ -51,7 +58,7 @@ function formatReferences(content: string) {
     const url = citationMap[n];
     if (!url) return '';
     const supNum = superscript(n);
-    return `<sup><a href=\"${url}\" target=\"_blank\" rel=\"noopener noreferrer\" class=\"text-blue-400 hover:text-blue-300 citation-link\" data-citation-number=\"${n}\" data-citation-url=\"${url}\">🔗${supNum}</a></sup>`;
+    return `<sup><a href=\"${url}\" target=\"_blank\" rel=\"noopener noreferrer\" class=\"citation-link\" data-citation-number=\"${n}\" data-citation-url=\"${url}\" onclick=\"window.citationClick('${n}', '${url}')\">🔗${supNum}</a></sup>`;
   });
 
   // Ensure paragraphs are separated by a blank line for readability
@@ -63,6 +70,18 @@ function formatReferences(content: string) {
 }
 
 export default function ChatMessages({ messages, onCitationClick, onGoogleScholarRedirect }: Props) {
+  // 전역 함수 설정
+  React.useEffect(() => {
+    if (typeof window !== 'undefined') {
+      window.citationClick = (citationNumber: string, citationUrl: string) => {
+        console.log('Global citationClick called:', { citationNumber, citationUrl });
+        if (onCitationClick) {
+          onCitationClick(citationNumber, citationUrl);
+        }
+      };
+    }
+  }, [onCitationClick]);
+
   // 출처 클릭 핸들러
   const handleCitationClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
     console.log('handleCitationClick called', e.currentTarget);
