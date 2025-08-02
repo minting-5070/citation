@@ -197,4 +197,4 @@ export async function POST(req: Request) {
       headers: { 'Content-Type': 'text/plain; charset=utf-8' }
     });
   }
-}
+}// Force redeploy Sat Aug  2 14:35:14 KST 2025
