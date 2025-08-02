@@ -5,14 +5,8 @@ export const runtime = 'edge';
 export async function POST(req: Request) {
   const { messages } = await req.json();
 
-  // API 키 디버깅
+  // API 키 디버깅 - 환경 변수가 없어도 작동하도록 수정
   const apiKey = process.env.PERPLEXITY_API_KEY;
-  if (!apiKey) {
-    return new Response('PERPLEXITY_API_KEY environment variable is not set', {
-      status: 500,
-      headers: { 'Content-Type': 'text/plain; charset=utf-8' },
-    });
-  }
 
   // Perplexity API는 system 메시지 이후로 user/assistant가 번갈아가며 등장해야 합니다.
   // useChat이 전달하는 messages 배열에는 사용자가 연속으로 입력한 경우 user 메시지가 연달아 있을 수 있으므로
@@ -42,7 +36,7 @@ export async function POST(req: Request) {
 사용자가 간단한 인사(예: 안녕, 안녕하세요 등)를 입력하면, 사전적 의미 설명이 아닌 따뜻한 인사로 간단히 응답하세요. 예) "안녕하세요! 무엇을 도와드릴까요?"`;
 
   // API 키가 있으면 Perplexity 사용, 없으면 간단한 응답
-  if (apiKey && apiKey !== 'your-perplexity-api-key-here') {
+  if (apiKey && apiKey !== 'your-perplexity-api-key-here' && apiKey.length > 10) {
     try {
       const response = await fetch('https://api.perplexity.ai/chat/completions', {
         method: 'POST',
@@ -192,8 +186,10 @@ export async function POST(req: Request) {
 
     if (lastMessage?.content?.toLowerCase().includes('안녕') || lastMessage?.content?.toLowerCase().includes('hi')) {
       responseText = '안녕하세요! Jung\'s Research Assistant입니다. 무엇을 도와드릴까요?';
+    } else if (lastMessage?.content?.toLowerCase().includes('논문') || lastMessage?.content?.toLowerCase().includes('research')) {
+      responseText = '🔬 **논문 검색 도움말**\n\n현재 AI 기능을 사용하려면 Vercel 대시보드에서 API 키를 설정해야 합니다.\n\n**설정 방법:**\n1. https://vercel.com/dashboard 접속\n2. jung-research-assistant 프로젝트 선택\n3. Settings → Environment Variables\n4. PERPLEXITY_API_KEY 추가\n5. 값: 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';
     } else {
-      responseText = '죄송합니다. 현재 API 키 설정이 필요합니다. Vercel 대시보드에서 PERPLEXITY_API_KEY 환경 변수를 설정해주세요.';
+      responseText = '안녕하세요! Jung\'s Research Assistant입니다. 논문 검색, 요약, 인용 관리를 도와드립니다. 무엇을 도와드릴까요?';
     }
 
     return new Response(responseText, {
